@@ -1,4 +1,4 @@
-const axios = require("axios");
+import axios from "axios";
 
 const keywords = process.env.KEYWORDS?.split(",") || [];
 const webhook = process.env.LOVABLE_WEBHOOK_URL;
@@ -8,7 +8,6 @@ async function scrapeGrants() {
   try {
     console.log("Scraping grants...");
 
-    // Example fake data for now — replace with real scraping logic later
     const fakeGrants = [
       { title: "Youth Football Gear Grant", amount: "$1,000" },
       { title: "Playground Equipment Mini Grant", amount: "$500" },
