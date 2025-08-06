@@ -27,5 +27,7 @@ async function scrapeGrants() {
     console.error("Scraper failed:", e.message);
   }
 }
-
+const interval = 15 * 60 * 1000;
 scrapeGrants();
+setInterval(scrapeGrants, interval);
+
