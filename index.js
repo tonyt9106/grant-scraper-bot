@@ -18,9 +18,10 @@ async function scrapeGrants() {
     ).slice(0, maxPerDay);
 
     for (const grant of matching) {
-      await axios.post(webhook, { grant });
-      console.log(`Submitted: ${grant.title}`);
-    }
+     await axios.post(webhook, {
+  title: grant.title,
+  amount: grant.amount
+});
 
     console.log("Done.");
   } catch (e) {
