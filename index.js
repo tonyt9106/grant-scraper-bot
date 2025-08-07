@@ -5,34 +5,35 @@ const webhook = process.env.LOVABLE_WEBHOOK_URL;
 const maxPerDay = parseInt(process.env.MAX_APPLICATIONS_PER_DAY || "200");
 
 async function scrapeGrants() {
-  console.log("Scraping grants...");
+  console.log("Scraping real grants...");
 
-  const fakeGrants = [
-    { title: "Youth Football Gear Grant", amount: "$1,000" },
-    { title: "Playground Equipment Mini Grant", amount: "$500" }
-  ];
+  try {
+    const response = await axios.get("https://api.publicgrants.io/grants"); // Replace this with real API later
+    const allGrants = response.data || [];
 
-  const matching = fakeGrants.filter(grant =>
-    keywords.some(kw =>
-      grant.title.toLowerCase().includes(kw.trim().toLowerCase())
-    )
-  ).slice(0, maxPerDay);
+    const matching = allGrants
+      .filter(grant =>
+        keywords.some(kw =>
+          grant.title.toLowerCase().includes(kw.trim().toLowerCase())
+        )
+      )
+      .slice(0, maxPerDay);
 
-  for (const grant of matching) {
-    try {
+    for (const grant of matching) {
       await axios.post(webhook, {
         title: grant.title,
-        amount: grant.amount
+        amount: grant.amount,
+        link: grant.url,
       });
-      console.log("Sent to webhook:", grant.title);
-    } catch (error) {
-      console.log("Webhook error:", error.message);
     }
-  }
 
-  console.log("Done.");
+    console.log("✅ Grants sent to webhook.");
+  } catch (err) {
+    console.error("❌ Error scraping grants:", err.message);
+  }
 }
 
-const interval = 15 * 60 * 1000; // 15 minutes
+const interval = 15 * 60 * 1000;
 scrapeGrants();
 setInterval(scrapeGrants, interval);
+
