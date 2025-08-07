@@ -1,45 +1,58 @@
-import axios from "axios";
+const axios = require("axios");
 
-const keywords = process.env.KEYWORDS?.split(",") || [];
-const webhook = process.env.LOVABLE_WEBHOOK_URL;
-const maxPerDay = parseInt(process.env.MAX_APPLICATIONS_PER_DAY || "200");
+const KEYWORDS = process.env.KEYWORDS?.split(",").map(k => k.trim().toLowerCase()) || [];
+const WEBHOOK_URL = process.env.LOVABLE_WEBHOOK_URL;
+const MAX_APPLICATIONS = parseInt(process.env.MAX_APPLICATIONS_PER_DAY || "200");
 
-// ✅ Debug log to confirm webhook is being picked up correctly
-console.log("Using webhook:", webhook);
+// ✅ TEMP TEST FEED — replace with real API later
+const GRANT_FEED_URL = "https://gist.githubusercontent.com/tonyt9106/9b7686452e3a0dcbbe9cf3c0a6bda1b1/raw/sample-grants.json";
 
-async function scrapeGrants() {
-  console.log("🔍 Scraping real grants...");
-
+async function fetchGrants() {
   try {
-    const response = await axios.get("https://api.publicgrants.io/grants"); // Placeholder API
-    const allGrants = response.data || [];
+    console.log("🔍 Scraping real grants...");
+    const response = await axios.get(GRANT_FEED_URL);
+    const allGrants = response.data;
 
-    const matching = allGrants
-      .filter((grant) =>
-        keywords.some((kw) =>
-          grant.title.toLowerCase().includes(kw.trim().toLowerCase())
-        )
-      )
-      .slice(0, maxPerDay);
+    const matchedGrants = allGrants.filter(grant =>
+      KEYWORDS.some(keyword => grant.title.toLowerCase().includes(keyword))
+    );
 
-    for (const grant of matching) {
-      await axios.post(webhook, {
+    console.log(`✅ ${matchedGrants.length} matching grants found.`);
+
+    let sentCount = 0;
+    for (const grant of matchedGrants) {
+      if (sentCount >= MAX_APPLICATIONS) {
+        console.log("🚫 Reached max daily application limit.");
+        break;
+      }
+
+      const payload = {
         event: "grant_scraped",
         grant_name: grant.title,
         amount: grant.amount,
-        link: grant.url,
+        url: grant.url,
         scraped_at: new Date().toISOString(),
-        source: "AutoGrantBot",
-      });
+        source: "sample-grants.json"
+      };
+
+      try {
+        const res = await axios.post(WEBHOOK_URL, payload, {
+          headers: {
+            "Content-Type": "application/json"
+          }
+        });
+        console.log(`📤 Sent grant to webhook: ${grant.title}`);
+        sentCount++;
+      } catch (err) {
+        console.error("❌ Failed to POST to webhook:", err.message);
+      }
     }
 
-    console.log(`✅ ${matching.length} grants sent to webhook.`);
+    console.log(`✅ Done. ${sentCount} grants sent to webhook.`);
+
   } catch (err) {
     console.error("❌ Error scraping grants:", err.message);
   }
 }
 
-// ⏰ Run every 15 minutes
-const interval = 15 * 60 * 1000;
-scrapeGrants();
-setInterval(scrapeGrants, interval);
+fetchGrants();
