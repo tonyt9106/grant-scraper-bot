@@ -1,52 +1,71 @@
-import axios from 'axios';
+// index.js
+const axios = require('axios');
+const fetch = require('node-fetch'); // In case of alternate fetch logic
+require('dotenv').config();
 
-const keywords = process.env.KEYWORDS?.split(',').map(k => k.trim()) || [];
-const webhookUrl = process.env.LOVABLE_WEBHOOK_URL;
-const maxAppsPerDay = parseInt(process.env.MAX_APPLICATIONS_PER_DAY || '100');
+// === CONFIG ===
 
-async function scrapeGrants() {
-  console.log('🔍 Scraping real grants...');
+// Replace this with an actual live feed; using Grants.gov public sample for now
+const GRANT_API_URL = 'https://api.sam.gov/opportunities/v2/search?limit=20&api_key=INSERT_YOUR_KEY_HERE&sort=-modifiedDate&status=active&type=forecast';
 
-  const dummyGrants = [
-    {
-      title: 'Youth Sports Equipment Grant',
-      description: 'Funding to support youth sports teams with equipment and resources.',
-      url: 'https://example.com/youth-sports-grant',
-      amount: 5000,
-      tags: ['youth', 'sports', 'equipment']
-    },
-    {
-      title: 'Community Playground Improvement Grant',
-      description: 'Funding for underserved communities to improve local playgrounds.',
-      url: 'https://example.com/playground-grant',
-      amount: 10000,
-      tags: ['playground', 'underserved', 'community']
-    }
-  ];
+// Replace this with your actual Supabase webhook endpoint
+const WEBHOOK_URL = 'https://yxkjasitdmchcffcacnc.supabase.co/functions/v1/vapi-webhook';
 
-  let matchingGrants = dummyGrants.filter(grant => {
-    return keywords.some(keyword =>
-      grant.title.toLowerCase().includes(keyword) || 
-      grant.description.toLowerCase().includes(keyword) || 
-      grant.tags.some(tag => tag.includes(keyword))
-    );
-  });
+// === Fetch grants ===
+async function fetchGrants() {
+  try {
+    const res = await axios.get(GRANT_API_URL);
+    const data = res.data;
+    const grants = data.opportunities || data.results || [];
 
-  matchingGrants = matchingGrants.slice(0, maxAppsPerDay);
+    console.log(`✅ Pulled ${grants.length} grant listings`);
+    return grants;
+  } catch (error) {
+    console.error('❌ Error fetching grants:', error.message);
+    return [];
+  }
+}
 
-  for (const grant of matchingGrants) {
-    try {
-      console.log(`📤 Sending to webhook: ${grant.title}`);
-      await axios.post(webhookUrl, { grant });
-    } catch (err) {
-      console.error(`❌ Failed to send webhook for ${grant.title}:`, err.message);
+// === Basic filter for qualifying grants ===
+function qualifies(grant) {
+  const amount = parseFloat(grant.estimatedFunding || grant.amount || 0);
+  return amount >= 500;
+}
+
+// === Submit webhook for each application ===
+async function applyToGrant(grant) {
+  const payload = {
+    event: 'grant_applied',
+    grant_id: grant.id || grant.opportunityID || grant.noticeId || 'unknown',
+    title: grant.title || grant.opportunityTitle || grant.description || 'Untitled',
+    amount: grant.estimatedFunding || grant.amount || 'Unknown',
+    agency: grant.agency || grant.department || 'N/A',
+    url: grant.url || grant.opportunityLink || 'N/A',
+    source: GRANT_API_URL
+  };
+
+  console.log(`📤 Applying to: ${payload.title}`);
+
+  try {
+    const res = await axios.post(WEBHOOK_URL, payload);
+    console.log(`✅ Webhook sent. Status: ${res.status}`);
+  } catch (error) {
+    console.error('❌ Webhook failed:', error.message);
+  }
+}
+
+// === Main logic ===
+(async () => {
+  console.log('🚀 Starting grant scraper...');
+  const grants = await fetchGrants();
+
+  for (const grant of grants) {
+    if (qualifies(grant)) {
+      await applyToGrant(grant);
+    } else {
+      console.log(`⚠️ Skipped: ${grant.title || 'No title'} (Below $500)`);
     }
   }
 
-  console.log('✅ Scraping finished');
-}
-
-scrapeGrants().catch(err => {
-  console.error('🔥 Fatal error during scraping:', err.message);
-  process.exit(1);
-});
+  console.log('🎯 Grant scraping session complete.');
+})();
