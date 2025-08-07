@@ -24,9 +24,11 @@ async function scrapeGrants() {
 });
 
     console.log("Done.");
-  } catch (error) {
-    console.error(error);
-  }
+      try {
+        axios.get(url)
+        console.log("Got that data")
+      } catch (error) {
+        console.log(error)
 }
 const interval = 15 * 60 * 1000;
 scrapeGrants();
