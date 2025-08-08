@@ -1,7 +1,11 @@
 {
+  "name": "grant-scraper-bot",
+  "version": "1.0.0",
+  "main": "completeGrantSubmission.js",
   "type": "module",
   "dependencies": {
+    "puppeteer": "^21.3.8",
     "@supabase/supabase-js": "^2.39.6",
-    "axios": "^1.6.8"
+    "xss": "^1.0.6"
   }
 }
