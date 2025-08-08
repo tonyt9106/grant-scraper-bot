@@ -1,4 +1,4 @@
-const axios = require('axios');
+import axios from "axios";
 
 const GRANTS_API_URL = 'https://api.grants.gov/v1/api/search2';
 const SUPABASE_WEBHOOK_URL = 'https://yxkjasitdmchcffcacnc.supabase.co/functions/v1/grant-webhook';
