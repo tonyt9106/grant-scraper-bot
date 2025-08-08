@@ -5,7 +5,7 @@ import puppeteer from 'puppeteer';
 
 // Supabase setup
 const supabaseUrl = 'https://yxkjasitdmchcffcacnc.supabase.co';
-const supabaseKey = 'YOUR_SUPABASE_SERVICE_ROLE_KEY'; // Replace with your actual Service Role key
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkZGRxaWZibWNrd2p2aXJ3cGVxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MDA1NTM3NywiZXhwIjoyMDY1NjMxMzc3fQ.0useIzORL95US8WYaStmiqObw0b65GtXuVSXn0n1aVA'; // Replace with your actual Service Role key
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function completeGrantSubmission() {
